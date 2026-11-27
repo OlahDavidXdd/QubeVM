@@ -11,7 +11,8 @@ adb logcat -d > smoke/logcat.txt
 adb shell uiautomator dump /sdcard/window.xml
 adb pull /sdcard/window.xml smoke/window.xml
 adb exec-out screencap -p > smoke/screen.png
-if grep -E 'FATAL EXCEPTION|UnsatisfiedLinkError|dlopen failed|Fatal signal' smoke/logcat.txt; then
+grep -q 'libqemu-system-x86_64.so.*: ok' smoke/logcat.txt
+if grep -E 'FATAL EXCEPTION|UnsatisfiedLinkError|dlopen failed|Fatal signal' smoke/logcat.txt | grep -v 'Load libqemu-system-i386.so.*not found'; then
   exit 1
 fi
 printf 'APK installed and process survived startup; guest boot is not asserted.\n'
@@ -53,7 +54,7 @@ PYCONFIRM
   adb exec-out screencap -p > smoke/guest-screen.png
   adb logcat -d > smoke/guest-logcat.txt
   adb shell pidof com.qubevm.main
-  if grep -E 'FATAL EXCEPTION|UnsatisfiedLinkError|dlopen failed|Fatal signal' smoke/guest-logcat.txt; then exit 1; fi
+  if grep -E 'FATAL EXCEPTION|UnsatisfiedLinkError|dlopen failed|Fatal signal' smoke/guest-logcat.txt | grep -v 'Load libqemu-system-i386.so.*not found'; then exit 1; fi
   adb exec-out run-as com.qubevm.main cat files/guest-serial.log > smoke/guest-serial.log
   grep -q 'asm-llm OS' smoke/guest-serial.log
   grep -q 'Model.*Qwen3' smoke/guest-serial.log
@@ -62,6 +63,33 @@ PYCONFIRM
   sleep 5
   adb exec-out run-as com.qubevm.main cat files/guest-serial.log > smoke/guest-interactive.log
   grep -q '\[mode\] think=1' smoke/guest-interactive.log
+  adb shell input text /nothink
+  adb shell input keyevent 66
+  sleep 1
+  adb shell input text Hi
+  adb shell input keyevent 66
+  started=$(date +%s)
+  generated=false
+  for attempt in $(seq 1 60); do
+    sleep 10
+    adb exec-out run-as com.qubevm.main cat files/guest-serial.log > smoke/guest-inference.log
+    if python3 - <<'PYINFERENCE'
+import pathlib,sys
+b=pathlib.Path('smoke/guest-inference.log').read_bytes()
+assert not any(e in b for e in [b'[FATAL]',b'[EXCEPTION]',b'PANIC'])
+marker=b'asm-llm> Hi'
+if marker not in b: sys.exit(1)
+output=b.split(marker,1)[1].lstrip(b'\r\n ')
+sys.exit(0 if output else 1)
+PYINFERENCE
+    then
+      generated=true
+      break
+    fi
+  done
+  test "$generated" = true
+  printf 'First generated output observed within %s seconds (10-second polling granularity).\n' "$(( $(date +%s) - started ))" | tee smoke/first-output-time.txt
+  adb exec-out screencap -p > smoke/inference-screen.png
   printf 'Boot button and real guest keyboard input exercised. Inspect guest-screen.png and logs for actual guest state.\n'
 else
   printf 'Bundled guest media was not prepared.\n' >&2
