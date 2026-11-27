@@ -55,7 +55,19 @@ PYCPU
 )
   test -n "$cpu_coordinates"
   adb shell input tap $cpu_coordinates
-  adb shell input keyevent 20 66
+  adb shell uiautomator dump /sdcard/window.xml >/dev/null
+  adb pull /sdcard/window.xml smoke/cpu-options.xml >/dev/null
+  two=$(python3 - <<'PYTWO'
+import xml.etree.ElementTree as E,re
+for e in E.parse('smoke/cpu-options.xml').iter('node'):
+    if e.get('text')=='2':
+        x1,y1,x2,y2=map(int,re.findall(r'\d+',e.get('bounds')))
+        print((x1+x2)//2,(y1+y2)//2)
+        break
+PYTWO
+)
+  test -n "$two"
+  adb shell input tap $two
   # Find the actual Boot button through Android accessibility XML, including scrolling.
   for attempt in 1 2 3 4 5; do
     adb shell uiautomator dump /sdcard/window.xml >/dev/null
