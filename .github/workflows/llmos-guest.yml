@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - run: sudo apt-get update && sudo apt-get install -y nasm binutils grub-pc-bin grub-efi-amd64-bin mtools xorriso
+      - run: sudo apt-get update && sudo apt-get install -y nasm binutils grub-pc-bin grub-efi-amd64-bin mtools xorriso qemu-system-x86
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -20,9 +20,13 @@ jobs:
           git clone https://github.com/alesha-pro/llm.asm.git guest
           git -C guest checkout 48feccbfd57cb669440f31ff64958d95bb8b848e
           python3 ci/build-guest.py
+      - run: python3 ci/test-guest.py
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: llm-asm-original-ISO
           path: |
             guest/build/*.iso
             guest/build/SHA256SUMS
+            guest/build/*.log
+            guest/build/model-revision.txt

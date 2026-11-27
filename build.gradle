@@ -14,7 +14,7 @@ buildscript {
 }
 
 // Add the QEMU version to the APK name, fallback to none when unspecified
-ext.qemuVersion = project.findProperty('qemuVersion') ?: System.getenv('QEMU_VERSION') ?: 'none'
+ext.qemuVersion = project.findProperty('qemuVersion') ?: System.getenv('QEMU_VERSION') ?: '11.1.3'
 ext.ndkVersion = '30.0.16248370'
 
 allprojects {
