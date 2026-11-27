@@ -31,6 +31,11 @@ public class QubeEmuActivity extends QubeActivity {
         LlmDashboard.show(this);
     }
 
+    @Override public void onFirstLaunch() {
+        com.max2idea.android.qube.install.Installer.installFiles(this, true);
+        com.max2idea.android.qube.main.QubeSettingsManager.setFirstLaunch(this);
+    }
+
     @Override
     protected void loadQEMULib() {
         try {

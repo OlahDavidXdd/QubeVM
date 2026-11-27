@@ -410,7 +410,7 @@ config-virgl: ndk gen-virgl-cross epoxy
 		-Dcheck-gl-errors=false \
 		-Dvenus=$(USE_VENUS) \
 		-Dvulkan-dload=true \
-		-Drender-server-mode=thread \
+		-Drender-server-worker=thread \
 		-Dc_args="$(ARCH_CFLAGS) -I$(NDK_INCLUDE) \
 		$(NDK_SYSROOT_INC) $(NDK_SYSROOT_ARCH_INC) \
 		-I$(SYSROOT)/usr/include $(SYS_ROOT) \

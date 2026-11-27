@@ -84,6 +84,7 @@ final class LlmDashboard {
                         LlmProfile.apply(iso.getText().toString(),mb,cores.getSelectedItemPosition()+1,cpu.getSelectedItem().toString(),multi.isChecked(),extra.getText().toString());
                         prefs.edit().putInt("ram",mb).putInt("cores",cores.getSelectedItemPosition()+1).putBoolean("multi",multi.isChecked()).putString("extra",extra.getText().toString()).putString("iso",iso.getText().toString()).apply();
                         new File(MachineController.getInstance().getMachineSaveDir()).mkdirs();
+                        com.max2idea.android.qube.files.FileInstaller.installFiles(a, false);
                         a.startVM();
                     }catch(Exception|LinkageError e){status.setText(e.toString());}
                 };
