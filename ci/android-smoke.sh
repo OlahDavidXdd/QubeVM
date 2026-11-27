@@ -26,8 +26,9 @@ import xml.etree.ElementTree as E,re
 for e in E.parse('smoke/boot-window.xml').iter('node'):
     if e.get('text','').casefold().startswith('boot system'):
         x1,y1,x2,y2=map(int,re.findall(r'\d+',e.get('bounds')))
-        print((x1+x2)//2,(y1+y2)//2)
-        break
+        if y2-y1 >= 40 and y1 >= 100 and y2 <= 1750:
+            print((x1+x2)//2,(y1+y2)//2)
+            break
 PY
 )
     if [ -n "$coordinates" ]; then
