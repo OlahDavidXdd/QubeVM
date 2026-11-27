@@ -3,8 +3,10 @@ on:
   workflow_dispatch:
   push:
     branches: [llmos]
+    paths-ignore: ["LLMOS.md", "docs/**"]
 permissions:
   contents: read
+  actions: read
 jobs:
   apk:
     runs-on: ubuntu-24.04
@@ -48,6 +50,19 @@ jobs:
           BUILD_GUEST: x86_64-softmmu
           USE_QEMU_VERSION: 11.1.3
           USE_KVM: 'false'
+      - uses: actions/download-artifact@v4
+        with:
+          name: llm-asm-original-ISO
+          run-id: '46035265522'
+          github-token: ${{ github.token }}
+          path: guest-media
+      - name: Verify and bundle original guest
+        run: |
+          cd guest-media
+          sha256sum -c SHA256SUMS
+          mkdir -p ../qube-android-x86/src/main/assets/llmos
+          cp *.iso ../qube-android-x86/src/main/assets/llmos/guest.iso
+          cp SHA256SUMS ../qube-android-x86/src/main/assets/llmos/SHA256SUMS
       - run: ./gradlew :qube-android-x86:assembleDebug -PqemuVersion=11.1.3
       - name: Verify APK native payload and signature
         run: |
