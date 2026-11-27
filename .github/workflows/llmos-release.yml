@@ -24,6 +24,8 @@ jobs:
       RELEASE_TAG: ${{ inputs.tag || 'llmos-v0.1.0' }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Validate verified build and release tag
         run: |
           [[ "$RELEASE_TAG" =~ ^llmos-v[0-9]+\.[0-9]+\.[0-9]+$ ]]
