@@ -63,7 +63,13 @@ jobs:
           mkdir -p ../qube-android-x86/src/main/assets/llmos
           cp *.iso ../qube-android-x86/src/main/assets/llmos/guest.iso
           cp SHA256SUMS ../qube-android-x86/src/main/assets/llmos/SHA256SUMS
-      - run: ./gradlew :qube-android-x86:assembleDebug -PqemuVersion=11.1.3
+      - name: Build signed debug APK
+        run: |
+          for attempt in 1 2 3; do
+            ./gradlew :qube-android-x86:assembleDebug -PqemuVersion=11.1.3 --max-workers=2 && break
+            test "$attempt" -lt 3 || exit 1
+            sleep 30
+          done
       - name: Verify APK native payload and signature
         run: |
           python3 ci/verify-apk.py qube-android-x86/build/outputs/apk/debug/*.apk ${{ matrix.abi }}
