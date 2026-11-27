@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 mkdir -p smoke
+capture_final() {
+  adb logcat -d > smoke/final-logcat.txt || true
+  adb exec-out screencap -p > smoke/final-screen.png || true
+}
+trap capture_final EXIT
 adb install -r apk/*.apk
 adb shell pm grant com.qubevm.main android.permission.POST_NOTIFICATIONS || true
 # Limit this integration test to a complete two-token generation in the original OS.
