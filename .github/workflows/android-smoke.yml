@@ -35,7 +35,7 @@ jobs:
           arch: x86_64
           profile: pixel_2
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -memory 4096
-          script: bash ci/android-smoke.sh
+          script: bash ci/android-smoke.sh && bash ci/android-vm-controls.sh
       - uses: actions/upload-artifact@v4
         if: always()
         with:

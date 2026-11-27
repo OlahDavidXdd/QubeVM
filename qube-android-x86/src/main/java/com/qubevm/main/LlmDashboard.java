@@ -14,6 +14,13 @@ final class LlmDashboard {
     static void show(QubeEmuActivity a) {
         android.content.SharedPreferences prefs = a.getSharedPreferences("llmos", 0);
         ScrollView scroll = new ScrollView(a);
+        scroll.setBackgroundColor(Color.rgb(8,12,11));
+        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(a.getWindow(), false);
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(scroll,(view,insets)->{
+            androidx.core.graphics.Insets bars=insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars() | androidx.core.view.WindowInsetsCompat.Type.displayCutout());
+            view.setPadding(bars.left,bars.top,bars.right,Math.max(bars.bottom,insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.ime()).bottom));
+            return insets;
+        });
         LinearLayout panel = new LinearLayout(a); panel.setOrientation(1); panel.setPadding(28,48,28,28);
         panel.setBackgroundColor(Color.rgb(8,12,11)); scroll.addView(panel);
         java.util.function.Consumer<String> label = s -> {
@@ -140,5 +147,6 @@ final class LlmDashboard {
         }
         new Handler(Looper.getMainLooper()).post(new Runnable(){public void run(){if(a.isDestroyed())return;status.setText("Emulator: "+MachineController.getInstance().getCurrStatus()+" • Guest progress appears in console");status.postDelayed(this,1500);}});
         a.setContentView(scroll);
+        androidx.core.view.ViewCompat.requestApplyInsets(scroll);
     }
 }
