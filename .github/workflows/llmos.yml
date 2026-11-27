@@ -30,6 +30,8 @@ jobs:
           sudo apt-get install -y make autoconf automake libtool-bin flex bison gettext texinfo rsync gtk-doc-tools ninja-build python3-pip
           pip install --break-system-packages meson mako packaging
       - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
       - uses: actions/cache@v4
         with:
           path: |
