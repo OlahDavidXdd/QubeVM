@@ -35,7 +35,8 @@ Select RAM (1024–16384 MB, default 2048), cores (1–8), CPU model (max recomm
 * Local original guest kernel assembled and linked successfully (24,252-byte Multiboot ELF32 container entering x86-64 long mode).
 * Local Android Java/resource build succeeded after selecting a valid QEMU resource version. This local APK had no native payload and is not a usable emulator deliverable.
 * Guest ISO/model workflow succeeded: https://github.com/OlahDavidXdd/QubeVM/actions/runs/46035265522
-* Native Android compilation and TCG runtime checks are being exercised in Actions; consult the latest run for current results.
+* Linux software-TCG test passed with 2 vCPUs and 2048 MB: original guest reported 2/2 cores online, initialized the 614 MiB Q8_0 model and answered Hello. Total QEMU wall time was 121.81 s; 13-token prefill took 98.70 s (0.13 tok/s). The one-token decode counter excludes meaningful sustained decode work and is not a throughput benchmark. Evidence: https://github.com/OlahDavidXdd/QubeVM/actions/runs/46035421112
+* Native Android compilation is being exercised in Actions; consult the latest run for current results.
 * No physical Android device is attached. Installation, graphics/input, native loading, inference, restart, thermal behavior and offline operation on Android are not yet verified.
 * No Android boot-time or token throughput measurements are available.
 * OSXSAVE is dynamically enabled by the guest through CR4/XCR0, not simply a static CPU flag. QEMU 11.1.3 has TCG AVX2/FMA/F16C and XSAVE implementations; end-to-end guest execution is the required validation.
