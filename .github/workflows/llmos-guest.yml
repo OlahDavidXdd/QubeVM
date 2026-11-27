@@ -1,6 +1,9 @@
 name: Build original llm.asm ISO
 on:
   workflow_dispatch:
+  push:
+    branches: [llmos]
+    paths: ["ci/build-guest.py", ".github/workflows/llmos-guest.yml"]
 permissions:
   contents: read
 jobs:
