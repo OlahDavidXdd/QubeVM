@@ -3,6 +3,13 @@ set -euo pipefail
 mkdir -p smoke
 adb install -r apk/*.apk
 adb shell pm grant com.qubevm.main android.permission.POST_NOTIFICATIONS || true
+# Limit this integration test to a complete two-token generation in the original OS.
+# Normal app sessions keep the guest's unchanged default generation length.
+adb shell run-as com.qubevm.main mkdir -p shared_prefs
+adb shell "run-as com.qubevm.main sh -c 'cat > shared_prefs/llmos.xml'" <<'PREFS'
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<map><string name="extra">-append max_tokens=2</string></map>
+PREFS
 adb shell svc wifi disable
 adb shell svc data disable
 adb shell settings put global airplane_mode_on 1
@@ -138,7 +145,7 @@ assert not any(e in b for e in [b'[FATAL]',b'[EXCEPTION]',b'PANIC'])
 marker=b'asm-llm> Hi'
 if marker not in b: sys.exit(1)
 output=b.split(marker,1)[1].lstrip(b'\r\n ')
-sys.exit(0 if output else 1)
+sys.exit(0 if output and b'decode : 2 tok' in output else 1)
 PYINFERENCE
     then
       generated=true
@@ -146,7 +153,7 @@ PYINFERENCE
     fi
   done
   test "$generated" = true
-  printf 'First generated output observed within %s seconds (10-second polling granularity).\n' "$(( $(date +%s) - started ))" | tee smoke/first-output-time.txt
+  printf 'Completed two-token inference observed within %s seconds (10-second polling granularity).\n' "$(( $(date +%s) - started ))" | tee smoke/first-output-time.txt
   adb exec-out screencap -p > smoke/inference-screen.png
   printf 'Boot button and real guest keyboard input exercised. Inspect guest-screen.png and logs for actual guest state.\n'
 else
