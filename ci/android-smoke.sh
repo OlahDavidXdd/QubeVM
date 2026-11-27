@@ -47,7 +47,7 @@ PYRAM
   cpu_coordinates=$(python3 - <<'PYCPU'
 import xml.etree.ElementTree as E,re
 for e in E.parse('smoke/hardware-window.xml').iter('node'):
-    if e.get('text')=='1' and e.get('class')=='android.widget.TextView':
+    if e.get('text')=='1' and e.get('class','').endswith('TextView'):
         x1,y1,x2,y2=map(int,re.findall(r'\d+',e.get('bounds')))
         print((x1+x2)//2,(y1+y2)//2)
         break
