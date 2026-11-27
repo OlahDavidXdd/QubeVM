@@ -29,29 +29,18 @@ final class LlmDashboard {
         iso.setHint("App-private ISO path"); iso.setVisibility(android.view.View.GONE); panel.addView(iso);
         java.util.concurrent.atomic.AtomicBoolean preparing=new java.util.concurrent.atomic.AtomicBoolean(false);
         TextView mediaStatus=new TextView(a);mediaStatus.setTextColor(0xff34d399);mediaStatus.setTextSize(16);panel.addView(mediaStatus);
-        File bundled = new File(a.getFilesDir(),"guest.iso");
-        if (bundled.exists() && iso.getText().length()==0) iso.setText(bundled.getPath());
+        File bundled = BundledGuest.kernel(a);
+        if (BundledGuest.ready(a) && iso.getText().length()==0) iso.setText(bundled.getPath());
         mediaStatus.setText(new File(iso.getText().toString()).isFile()?"Boot media ready":"Boot media not installed");
-        if (!bundled.exists() && iso.getText().length()==0) {
+        if (!BundledGuest.ready(a) && (iso.getText().length()==0 || iso.getText().toString().equals(bundled.getPath()))) {
             preparing.set(true);
             mediaStatus.setText("Preparing original OS and Qwen model…");
             new Thread(() -> {
-                File tmp = new File(a.getFilesDir(),"bundled.partial");
                 try {
-                    String expected;
-                    try(java.io.InputStream sums=a.getAssets().open("llmos/SHA256SUMS")) {
-                        expected=new java.io.BufferedReader(new java.io.InputStreamReader(sums,java.nio.charset.StandardCharsets.UTF_8)).readLine().trim().split(" ")[0];
-                    }
-                    java.security.MessageDigest md=java.security.MessageDigest.getInstance("SHA-256");
-                    try(java.io.InputStream in=a.getAssets().open("llmos/guest.iso"); java.io.OutputStream out=new java.io.FileOutputStream(tmp)) {
-                        byte[] b=new byte[1048576];int n;while((n=in.read(b))!=-1){out.write(b,0,n);md.update(b,0,n);}
-                    }
-                    StringBuilder actual=new StringBuilder();for(byte b:md.digest())actual.append(String.format("%02x",b&255));
-                    if(!expected.equalsIgnoreCase(actual.toString()))throw new java.io.IOException("Bundled ISO checksum mismatch");
-                    java.nio.file.Files.move(tmp.toPath(),bundled.toPath(),java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                    BundledGuest.install(a);
                     prefs.edit().putString("iso",bundled.getPath()).apply();
                     a.runOnUiThread(()->{iso.setText(bundled.getPath());mediaStatus.setText("Original OS and Qwen model installed • checksum verified");});
-                }catch(Exception e){tmp.delete();a.runOnUiThread(()->{mediaStatus.setText("Bundled setup failed; import a verified ISO");Toast.makeText(a,"Guest setup: "+e.getMessage()+". Import ISO to continue.",1).show();});}
+                }catch(Exception e){a.runOnUiThread(()->{mediaStatus.setText("Bundled setup failed; import a verified ISO");Toast.makeText(a,e.toString(),1).show();});}
                 finally { preparing.set(false); }
             }).start();
         }
@@ -87,6 +76,11 @@ final class LlmDashboard {
             };
             a.startActivityForResult(i, 6101);
         });
+        Button original=new Button(a);original.setText("Use original bundled system");panel.addView(original);
+        original.setOnClickListener(v->{
+            if(preparing.get() || MachineController.getInstance().isRunning()){Toast.makeText(a,"Wait for setup or stop the system first",1).show();return;}
+            prefs.edit().putString("iso",BundledGuest.ready(a)?bundled.getPath():"").apply();a.recreate();
+        });
         label.accept("RAM allocation (MB)");
         EditText ram = new EditText(a); ram.setTextColor(-1); ram.setInputType(InputType.TYPE_CLASS_NUMBER);
         ram.setText(""+prefs.getInt("ram",2048)); panel.addView(ram);
@@ -110,6 +104,7 @@ final class LlmDashboard {
             try {
                 if(MachineController.getInstance().isRunning()){a.startVM();return;}
                 int mb=Integer.parseInt(ram.getText().toString());
+                if(iso.getText().toString().equals(bundled.getPath()) && !BundledGuest.ready(a))throw new IllegalArgumentException("Wait for original guest setup to finish");
                 if(!new File(iso.getText().toString()).isFile())throw new IllegalArgumentException("Import a bootable ISO first");
                 Runnable launch=()->{
                     try {

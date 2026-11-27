@@ -27,7 +27,7 @@ jobs:
       - run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0' 'ndk;30.0.16248370'
       - run: |
           sudo apt-get update
-          sudo apt-get install -y make autoconf automake libtool-bin flex bison gettext texinfo rsync gtk-doc-tools ninja-build python3-pip
+          sudo apt-get install -y make autoconf automake libtool-bin flex bison gettext texinfo rsync gtk-doc-tools ninja-build python3-pip xorriso
           pip install --break-system-packages meson mako packaging
       - uses: gradle/actions/setup-gradle@v4
         with:
@@ -71,13 +71,8 @@ jobs:
           python3 ci/build-guest.py
           mkdir -p guest-media
           cp guest/build/*.iso guest/build/SHA256SUMS guest-media/
-      - name: Verify and bundle original guest
-        run: |
-          cd guest-media
-          sha256sum -c SHA256SUMS
-          mkdir -p ../qube-android-x86/src/main/assets/llmos
-          cp *.iso ../qube-android-x86/src/main/assets/llmos/guest.iso
-          cp SHA256SUMS ../qube-android-x86/src/main/assets/llmos/SHA256SUMS
+      - name: Verify and prepare original Multiboot payload
+        run: python3 ci/prepare-bundled-media.py
       - name: Build signed debug APK
         run: |
           for attempt in 1 2 3; do

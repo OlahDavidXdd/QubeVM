@@ -14,7 +14,15 @@ public final class LlmProfile {
         m.setEnableKVM(0); m.setEnableMTTCG(multi ? 1 : 0);
         m.setTcgBuffer(performance ? 512 : 256);
         m.setRenderer(0); m.setVga("std"); m.setMachineType("pc");
-        m.setEnableCDROM(true); m.setCdImagePath(iso); m.setBootDevice("CDROM");
+        java.io.File original = new java.io.File(com.max2idea.android.qube.main.QubeApplication.getInstance().getFilesDir(), "llmos/kernel.elf");
+        if (iso.equals(original.getPath())) {
+            m.setEnableCDROM(false); m.setCdImagePath(null); m.setBootDevice("Default");
+            m.setKernel(iso); m.setInitRd(new java.io.File(original.getParentFile(), "model.asmbin").getPath());
+            m.setAppend("");
+        } else {
+            m.setKernel(null); m.setInitRd(null); m.setAppend(null);
+            m.setEnableCDROM(true); m.setCdImagePath(iso); m.setBootDevice("CDROM");
+        }
         m.setNetwork(null); m.setSoundCard(null); m.setExtraParams("-serial file:" + com.max2idea.android.qube.main.QubeApplication.getInstance().getFilesDir() + "/guest-serial.log " + extra);
     }
     private LlmProfile() {}
