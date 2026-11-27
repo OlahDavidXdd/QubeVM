@@ -1,7 +1,6 @@
-diff -ru --no-dereference pristine/meson.build final/meson.build
---- pristine/meson.build	2026-09-17 03:18:37.005933927 +0000
-+++ final/meson.build	2026-09-17 03:18:37.020664719 +0000
-@@ -56,6 +56,9 @@
+--- a/meson.build
++++ b/meson.build
+@@ -81,11 +81,18 @@
  
  with_host_windows = host_machine.system() == 'windows'
  with_host_darwin = host_machine.system() == 'darwin'
@@ -9,27 +8,19 @@ diff -ru --no-dereference pristine/meson.build final/meson.build
 +# treat it like Windows/Darwin below so EGL doesn't require GBM.
 +with_host_android = host_machine.system() == 'android'
  
- warnings = [
-    '-Werror=enum-int-mismatch',
-@@ -86,7 +89,16 @@
+ not_found = dependency('', required: false)
  gbm_dep = not_found
  thread_dep = dependency('threads')
- with_vrend = get_option('vrend')
--epoxy_dep = dependency('epoxy', version: '>= 1.5.4', required: with_vrend)
+-epoxy_dep = dependency('epoxy', version: '>= 1.5.4')
 +if with_host_android
-+  # QUBE: pkg-config is unreliable in the NDK sysroot, epoxy is
-+  # supplied directly via -I/-L (see Makefile config-virgl target).
-+  epoxy_dep = declare_dependency(
-+    compile_args: [],
-+    link_args: ['-lepoxy'],
-+    version: '1.5.10')
++  epoxy_dep = declare_dependency(link_args: ['-lepoxy'], version: '1.5.10')
 +else
-+  epoxy_dep = dependency('epoxy', version: '>= 1.5.4', required: with_vrend)
++  epoxy_dep = dependency('epoxy', version: '>= 1.5.4')
 +endif
  m_dep = cc.find_library('m', required : false)
  dl_dep = not_found
  if not with_host_windows and not with_host_darwin
-@@ -307,8 +319,10 @@
+@@ -294,8 +301,10 @@
  have_glx = false
  
  if with_egl
@@ -42,7 +33,7 @@ diff -ru --no-dereference pristine/meson.build final/meson.build
           have_egl = true
        else
           if libdrm_dep.found()
-@@ -329,7 +343,9 @@
+@@ -316,7 +325,9 @@
  endif
  
  if with_glx
@@ -53,20 +44,17 @@ diff -ru --no-dereference pristine/meson.build final/meson.build
        glx_dep = dependency('x11', required: require_glx)
        have_glx = glx_dep.found()
        conf_data.set('HAVE_EPOXY_GLX_H', 1)
-@@ -489,7 +505,9 @@
+@@ -430,7 +441,7 @@
  endif
  
  subdir('src')
--if with_vrend and not with_host_windows
-+if with_vrend and not with_host_windows and not with_host_android
-+   # QUBE: vtest isn't needed for QEMU, and it links against a
-+   # legacy GCC toolchain path that doesn't exist in NDK r23+.
+-if not with_host_windows
++if not with_host_windows and not with_host_android
     subdir('vtest')
  endif
  
-diff -ru --no-dereference pristine/src/mesa/util/os_misc.c final/src/mesa/util/os_misc.c
---- pristine/src/mesa/util/os_misc.c	2026-09-17 03:18:37.008288913 +0000
-+++ final/src/mesa/util/os_misc.c	2026-09-17 03:18:37.017685697 +0000
+--- a/src/mesa/util/os_misc.c
++++ b/src/mesa/util/os_misc.c
 @@ -55,8 +55,8 @@
  #if DETECT_OS_ANDROID
  #  define LOG_TAG "MESA"
@@ -109,47 +97,3 @@ diff -ru --no-dereference pristine/src/mesa/util/os_misc.c final/src/mesa/util/o
     if (len > 1) {
        opt = ralloc_strdup(options_tbl, value);
     }
-diff -ru --no-dereference pristine/src/mesa/util/u_thread.h final/src/mesa/util/u_thread.h
---- pristine/src/mesa/util/u_thread.h	2026-09-17 03:18:37.008846028 +0000
-+++ final/src/mesa/util/u_thread.h	2026-09-17 03:18:37.017448808 +0000
-@@ -289,7 +289,7 @@
-  * util_barrier
-  */
- 
--#if defined(HAVE_PTHREAD) && !defined(__APPLE__) && !defined(__HAIKU__)
-+#if defined(HAVE_PTHREAD) && !defined(__APPLE__) && !defined(__HAIKU__) && !defined(__ANDROID__)
- 
- typedef pthread_barrier_t util_barrier;
- 
-diff -ru --no-dereference pristine/src/virgl_util.c final/src/virgl_util.c
---- pristine/src/virgl_util.c	2026-09-17 03:18:37.010287866 +0000
-+++ final/src/virgl_util.c	2026-09-17 03:18:37.017697851 +0000
-@@ -43,6 +43,10 @@
- #include <stdio.h>
- 
- #ifdef HAVE_DMABUF_H
-+// QUBE: NDK's linux/dma-buf.h wants kernel-internal `u64`, but
-+// userspace headers only provide `__u64` - define it ourselves.
-+#include <stdint.h>
-+typedef uint64_t u64;
- #include <linux/dma-buf.h>
- #include <sys/ioctl.h>
- #endif
-diff -ru --no-dereference pristine/src/vrend/vrend_renderer.c final/src/vrend/vrend_renderer.c
---- pristine/src/vrend/vrend_renderer.c	2026-09-17 03:18:37.010583376 +0000
-+++ final/src/vrend/vrend_renderer.c	2026-09-17 03:18:37.019123357 +0000
-@@ -7663,6 +7663,14 @@
-    init_features(gles ? 0 : gl_ver,
-                  gles ? gl_ver : 0);
- 
-+   // QUBE: Adreno's compiler rejects the fsout_c1 output we generate
-+   // for GL_EXT_blend_func_extended, force dual_src_blend off.
-+   if (gles && has_feature(feat_dual_src_blend)) {
-+      const char *dsb_renderer = (const char *)glGetString(GL_RENDERER);
-+      if (dsb_renderer && strstr(dsb_renderer, "Adreno") != NULL)
-+         clear_feature(feat_dual_src_blend);
-+   }
-+
-    if (!vrend_winsys_has_gl_colorspace())
-       clear_feature(feat_srgb_write_control) ;
- 

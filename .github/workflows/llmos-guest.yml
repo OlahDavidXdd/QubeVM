@@ -1,0 +1,25 @@
+name: Build original llm.asm ISO
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  guest:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y nasm binutils grub-pc-bin grub-efi-amd64-bin mtools xorriso
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install numpy huggingface_hub
+      - run: |
+          git clone https://github.com/alesha-pro/llm.asm.git guest
+          git -C guest checkout 48feccbfd57cb669440f31ff64958d95bb8b848e
+          python3 ci/build-guest.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: llm-asm-original-ISO
+          path: |
+            guest/build/*.iso
+            guest/build/SHA256SUMS
