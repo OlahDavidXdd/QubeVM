@@ -6,6 +6,12 @@ on:
         description: New preview release tag
         required: true
         default: llmos-v0.1.0
+  push:
+    branches: [llmos]
+    paths: ['.github/workflows/llmos-release.yml']
+concurrency:
+  group: llmos-release
+  cancel-in-progress: false
 permissions:
   contents: write
   actions: read
@@ -15,7 +21,7 @@ jobs:
     timeout-minutes: 30
     env:
       GH_TOKEN: ${{ github.token }}
-      RELEASE_TAG: ${{ inputs.tag }}
+      RELEASE_TAG: ${{ inputs.tag || 'llmos-v0.1.0' }}
     steps:
       - uses: actions/checkout@v4
       - name: Validate verified build and release tag
