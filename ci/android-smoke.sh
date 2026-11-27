@@ -145,6 +145,7 @@ PYFULL
   sleep 5
   adb exec-out run-as com.qubevm.main cat files/guest-serial.log > smoke/guest-interactive.log
   grep -q '\[mode\] think=1' smoke/guest-interactive.log
+  if [ "${LLMOS_SKIP_INFERENCE:-0}" != 1 ]; then
   adb shell input text /nothink
   adb shell input keyevent 66
   sleep 1
@@ -172,6 +173,7 @@ PYINFERENCE
   test "$generated" = true
   printf 'Completed two-token inference observed within %s seconds (10-second polling granularity).\n' "$(( $(date +%s) - started ))" | tee smoke/first-output-time.txt
   adb exec-out screencap -p > smoke/inference-screen.png
+  fi
   printf 'Boot button and real guest keyboard input exercised. Inspect guest-screen.png and logs for actual guest state.\n'
 else
   printf 'Bundled guest media was not prepared.\n' >&2

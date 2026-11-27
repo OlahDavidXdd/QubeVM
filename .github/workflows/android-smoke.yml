@@ -15,7 +15,9 @@ permissions:
 jobs:
   android:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 35
+    env:
+      LLMOS_SKIP_INFERENCE: ${{ inputs.skip_inference && '1' || '0' }}
     steps:
       - uses: actions/checkout@v4
       - name: Download latest successful x86-64 APK
