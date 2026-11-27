@@ -31,7 +31,15 @@ import xml.etree.ElementTree as E
 texts=[n.get('text') for n in E.parse('smoke/persisted-window.xml').iter('node')]
 assert '1536' in texts and '2' in texts, 'Hardware configuration did not persist'
 PY
-python3 ci/android-tap.py 'boot system'
+# Check the 1 GiB minimum using the original OS's smaller supported context.
+python3 ci/android-tap.py '1536'
+adb shell input keyevent 123 67 67 67 67
+adb shell input text 1024
+adb shell input keyevent 4
+python3 ci/android-tap.py '-append'
+adb shell input keyevent 123 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67
+adb shell input keyevent 4
+python3 ci/android-tap.py 'boot system' 
 recovered=false
 for attempt in $(seq 1 30); do
   sleep 5
@@ -40,6 +48,7 @@ for attempt in $(seq 1 30); do
 done
 test "$recovered" = true
 grep -q 'SMP.*2/2' smoke/recovery-serial.log
-grep -q 'RAM.*1535 MiB' smoke/recovery-serial.log
+grep -q 'RAM.*1023 MiB' smoke/recovery-serial.log
+grep -q 'Model.*ctx=512' smoke/recovery-serial.log
 adb exec-out screencap -p > smoke/recovery-screen.png
 printf 'Warm restart, clean stop, persisted hardware, and new-session boot verified.\n'

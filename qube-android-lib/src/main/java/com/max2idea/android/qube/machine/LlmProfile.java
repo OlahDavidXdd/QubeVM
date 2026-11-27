@@ -18,7 +18,7 @@ public final class LlmProfile {
         if (iso.equals(original.getPath())) {
             m.setEnableCDROM(false); m.setCdImagePath(null); m.setBootDevice("Default");
             m.setKernel(iso); m.setInitRd(new java.io.File(original.getParentFile(), "model.asmbin").getPath());
-            m.setAppend("");
+            m.setAppend(ram < 1536 ? "ctx=512" : "");
         } else {
             m.setKernel(null); m.setInitRd(null); m.setAppend(null);
             m.setEnableCDROM(true); m.setCdImagePath(iso); m.setBootDevice("CDROM");
