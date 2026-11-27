@@ -51,7 +51,30 @@ for e in E.parse('smoke/confirm-window.xml').iter('node'):
 PYCONFIRM
 )
   if [ -n "$confirm" ]; then adb shell input tap $confirm; fi
-  sleep 45
+  sleep 2
+  adb shell uiautomator dump /sdcard/window.xml >/dev/null
+  adb pull /sdcard/window.xml smoke/fullscreen-window.xml >/dev/null
+  fullscreen=$(python3 - <<'PYFULL'
+import xml.etree.ElementTree as E,re
+for e in E.parse('smoke/fullscreen-window.xml').iter('node'):
+    if e.get('text','').casefold()=='got it':
+        x1,y1,x2,y2=map(int,re.findall(r'\d+',e.get('bounds')))
+        print((x1+x2)//2,(y1+y2)//2)
+        break
+PYFULL
+)
+  if [ -n "$fullscreen" ]; then adb shell input tap $fullscreen; fi
+  ready=false
+  boot_started=$(date +%s)
+  for attempt in $(seq 1 60); do
+    adb exec-out run-as com.qubevm.main cat files/guest-serial.log > smoke/guest-serial.log
+    if grep -q '\[FATAL\]' smoke/guest-serial.log; then cat smoke/guest-serial.log; exit 1; fi
+    if grep -q 'Model.*Qwen3' smoke/guest-serial.log; then ready=true; break; fi
+    sleep 10
+  done
+  adb exec-out screencap -p > smoke/boot-readiness-screen.png
+  test "$ready" = true
+  printf 'Guest model ready within %s seconds (10-second polling granularity).\n' "$(( $(date +%s) - boot_started ))" | tee smoke/boot-ready-time.txt
   adb exec-out screencap -p > smoke/guest-screen.png
   adb logcat -d > smoke/guest-logcat.txt
   adb shell pidof com.qubevm.main
