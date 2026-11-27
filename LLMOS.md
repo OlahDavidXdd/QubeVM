@@ -29,7 +29,7 @@ For optional ISO import, download and unzip the guest artifact. Enter the ISO's 
 
 ## Use
 
-Select RAM (1024–16384 MB, default 2048), cores (1–8), CPU model (max recommended), and multithreaded TCG. Boot System opens QubeVM's actual QGE display with its existing keyboard, fullscreen and input controls. Stop and Restart use the existing VM controller. Stop the VM before changing hardware. Settings are applied to Machine and passed by VMExecutor to actual `-m`, `-smp`, `-cpu` and TCG thread arguments. No KVM/root is required. Advanced arguments can override normal settings and should be used carefully.
+Select RAM (1024–16384 MB, default 2048), cores (1–8), CPU model (max recommended), and multithreaded TCG. Boot System opens QubeVM's actual QGE display with its existing keyboard, fullscreen and input controls. Stop and Restart use the existing VM controller. QubeVM deliberately exits the app process after Stop to unload native global state; reopen LLM.OS to start a fresh session. Stop the VM before changing hardware. Settings are applied to Machine and passed by VMExecutor to actual `-m`, `-smp`, `-cpu` and TCG thread arguments. No KVM/root is required. Advanced arguments can override normal settings and should be used carefully.
 
 ## Verification and limits
 
@@ -41,10 +41,11 @@ Select RAM (1024–16384 MB, default 2048), cores (1–8), CPU model (max recomm
 * ARM64 APK: https://github.com/OlahDavidXdd/QubeVM/actions/runs/46041069545/artifacts/15221480249
 * x86-64 APK: https://github.com/OlahDavidXdd/QubeVM/actions/runs/46041069545/artifacts/15219942729
 * Android 15 x86-64 ISO boot, native loading, model initialization, actual VGA display, keyboard commands and generated AI output were verified: https://github.com/OlahDavidXdd/QubeVM/actions/runs/46040660062. The unmodified guest answered `Hi` with `Hello`. ISO model readiness polling took 253 s after fullscreen onboarding; first generated output was observed within a further 222 s (10 s polling granularity). These are slow software-emulation measurements, not sustained token throughput.
-* Direct Multiboot offline boot with custom 1536 MB RAM and two cores is under test. No physical ARM64 device is attached. Restart, thermal behavior and sustained Android throughput remain unverified.
-* No Android boot-time or token throughput measurements are available.
+* Direct Multiboot offline boot, UI-selected 1536 MB RAM, two vCPUs, actual keyboard commands and completed two-token inference passed: https://github.com/OlahDavidXdd/QubeVM/actions/runs/46043015101. The guest reported 1535 MiB and 2/2 cores and generated `Hello!`. Model readiness was observed on the first poll after onboarding; completed two-token inference took 547 s of test wall time (10 s polling granularity). This is not a sustained throughput benchmark.
+* No physical ARM64 device is attached. Restart, 1 GiB context fallback, thermal behavior and sustained Android throughput remain under verification or unmeasured.
+* Sustained Android token throughput has not been benchmarked; the readiness and first-output observations above are coarse integration-test timings.
 * OSXSAVE is dynamically enabled by the guest through CR4/XCR0, not simply a static CPU flag. QEMU 11.1.3 has TCG AVX2/FMA/F16C and XSAVE implementations; end-to-end guest execution is the required validation.
-* Original guest boot page tables identity-map 0–4 GiB. Selecting larger RAM does not remove guest addressability limits. 1 GiB may be insufficient for model plus arena. Default 2 GiB is recommended.
+* Original guest boot page tables identity-map 0–4 GiB. Selecting larger RAM does not remove guest addressability limits. For the bundled original OS, allocations below 1536 MB use the original `ctx=512` boot option to fit the model and KV arena; larger allocations retain the original 2048-token default. Default 2 GiB is recommended.
 * RAM warnings are advisory; Android may still terminate the foreground VM under pressure. Resolution is fixed by the original VGA text guest. No fake progress or inference output is generated.
 * Performance mode increases the TCG translation cache from 256 to 512 MiB. Actual COM1 output can be opened and copied from the dashboard. Prompt entry and clipboard text input use the original QGE console. Thermal controls are not implemented.
 
