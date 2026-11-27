@@ -1,0 +1,54 @@
+name: Publish verified LLM.OS release
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: New preview release tag
+        required: true
+        default: llmos-v0.1.0
+permissions:
+  contents: write
+  actions: read
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: ${{ inputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate verified build and release tag
+        run: |
+          [[ "$RELEASE_TAG" =~ ^llmos-v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          test "$(gh run view 46044960815 --json conclusion --jq .conclusion)" = success
+          test "$(gh run view 46045767536 --json conclusion --jq .conclusion)" = success
+          git diff --exit-code 435b1a6539c8313c13abc2335ec7ab5d3ce57584 HEAD -- build.gradle settings.gradle gradle.properties gradle qube-android-lib qube-android-x86
+      - uses: actions/download-artifact@v4
+        with:
+          name: LLMOS-arm64-v8a-debug
+          run-id: '46044960815'
+          github-token: ${{ github.token }}
+          path: downloaded/arm64
+      - uses: actions/download-artifact@v4
+        with:
+          name: LLMOS-x86_64-debug
+          run-id: '46044960815'
+          github-token: ${{ github.token }}
+          path: downloaded/x86_64
+      - name: Prepare and verify release assets
+        run: |
+          mkdir release
+          cp downloaded/arm64/*.apk "release/LLM.OS-${RELEASE_TAG}-arm64-v8a.apk"
+          cp downloaded/x86_64/*.apk "release/LLM.OS-${RELEASE_TAG}-x86_64.apk"
+          python3 ci/verify-apk.py "release/LLM.OS-${RELEASE_TAG}-arm64-v8a.apk" arm64-v8a
+          python3 ci/verify-apk.py "release/LLM.OS-${RELEASE_TAG}-x86_64.apk" x86_64
+          signer=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)
+          test -n "$signer"
+          "$signer" verify --verbose "release/LLM.OS-${RELEASE_TAG}-arm64-v8a.apk"
+          "$signer" verify --verbose "release/LLM.OS-${RELEASE_TAG}-x86_64.apk"
+          cd release
+          sha256sum *.apk > SHA256SUMS
+      - name: Publish preview release
+        run: |
+          gh release create "$RELEASE_TAG" release/*.apk release/SHA256SUMS --target "$GITHUB_SHA" --title "LLM.OS ${RELEASE_TAG#llmos-} — Preview" --prerelease --notes-file ci/release-notes.md
