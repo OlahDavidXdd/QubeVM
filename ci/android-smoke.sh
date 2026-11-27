@@ -3,6 +3,9 @@ set -euo pipefail
 mkdir -p smoke
 adb install -r apk/*.apk
 adb shell pm grant com.qubevm.main android.permission.POST_NOTIFICATIONS || true
+adb shell svc wifi disable
+adb shell svc data disable
+adb shell settings put global airplane_mode_on 1
 adb logcat -c
 adb shell am start -W -n com.qubevm.main/.QubeEmuActivity | tee smoke/launch.txt
 sleep 30
@@ -16,7 +19,36 @@ if grep -E 'FATAL EXCEPTION|UnsatisfiedLinkError|dlopen failed|Fatal signal' smo
   exit 1
 fi
 printf 'APK installed and process survived startup; guest boot is not asserted.\n'
-if adb shell run-as com.qubevm.main test -f files/guest.iso; then
+if adb shell run-as com.qubevm.main test -f files/llmos/ready || adb shell run-as com.qubevm.main test -f files/guest.iso; then
+  # Change both hardware controls through the actual UI before boot.
+  ram_coordinates=$(python3 - <<'PYRAM'
+import xml.etree.ElementTree as E,re
+for e in E.parse('smoke/window.xml').iter('node'):
+    if e.get('class')=='android.widget.EditText' and e.get('text')=='2048':
+        x1,y1,x2,y2=map(int,re.findall(r'\d+',e.get('bounds')))
+        print((x1+x2)//2,(y1+y2)//2)
+        break
+PYRAM
+)
+  test -n "$ram_coordinates"
+  adb shell input tap $ram_coordinates
+  adb shell input keyevent 123 67 67 67 67
+  adb shell input text 1536
+  adb shell input keyevent 4
+  adb shell uiautomator dump /sdcard/window.xml >/dev/null
+  adb pull /sdcard/window.xml smoke/hardware-window.xml >/dev/null
+  cpu_coordinates=$(python3 - <<'PYCPU'
+import xml.etree.ElementTree as E,re
+for e in E.parse('smoke/hardware-window.xml').iter('node'):
+    if e.get('text')=='1' and e.get('class')=='android.widget.TextView':
+        x1,y1,x2,y2=map(int,re.findall(r'\d+',e.get('bounds')))
+        print((x1+x2)//2,(y1+y2)//2)
+        break
+PYCPU
+)
+  test -n "$cpu_coordinates"
+  adb shell input tap $cpu_coordinates
+  adb shell input keyevent 20 66
   # Find the actual Boot button through Android accessibility XML, including scrolling.
   for attempt in 1 2 3 4 5; do
     adb shell uiautomator dump /sdcard/window.xml >/dev/null
@@ -82,6 +114,8 @@ PYFULL
   adb exec-out run-as com.qubevm.main cat files/guest-serial.log > smoke/guest-serial.log
   grep -q 'asm-llm OS' smoke/guest-serial.log
   grep -q 'Model.*Qwen3' smoke/guest-serial.log
+  grep -q 'SMP.*2/2' smoke/guest-serial.log
+  grep -q 'RAM.*1535 MiB' smoke/guest-serial.log
   adb shell input text /think
   adb shell input keyevent 66
   sleep 5
