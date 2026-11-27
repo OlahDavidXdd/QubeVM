@@ -26,13 +26,15 @@ final class LlmDashboard {
         label.accept("Physical RAM: " + info.totalMem/1048576 + " MB • Available: " + info.availMem/1048576 + " MB");
         label.accept("Original llm.asm • Qwen3-0.6B Q8_0 • Offline after setup");
         EditText iso = new EditText(a); iso.setText(prefs.getString("iso", "")); iso.setTextColor(-1); iso.setHintTextColor(0xff78958b);
-        iso.setHint("App-private ISO path"); panel.addView(iso);
+        iso.setHint("App-private ISO path"); iso.setVisibility(android.view.View.GONE); panel.addView(iso);
         java.util.concurrent.atomic.AtomicBoolean preparing=new java.util.concurrent.atomic.AtomicBoolean(false);
+        TextView mediaStatus=new TextView(a);mediaStatus.setTextColor(0xff34d399);mediaStatus.setTextSize(16);panel.addView(mediaStatus);
         File bundled = new File(a.getFilesDir(),"guest.iso");
         if (bundled.exists() && iso.getText().length()==0) iso.setText(bundled.getPath());
+        mediaStatus.setText(new File(iso.getText().toString()).isFile()?"Boot media ready":"Boot media not installed");
         if (!bundled.exists() && iso.getText().length()==0) {
             preparing.set(true);
-            label.accept("Preparing bundled original OS and Qwen model…");
+            mediaStatus.setText("Preparing original OS and Qwen model…");
             new Thread(() -> {
                 File tmp = new File(a.getFilesDir(),"bundled.partial");
                 try {
@@ -48,8 +50,8 @@ final class LlmDashboard {
                     if(!expected.equalsIgnoreCase(actual.toString()))throw new java.io.IOException("Bundled ISO checksum mismatch");
                     java.nio.file.Files.move(tmp.toPath(),bundled.toPath(),java.nio.file.StandardCopyOption.REPLACE_EXISTING);
                     prefs.edit().putString("iso",bundled.getPath()).apply();
-                    a.runOnUiThread(()->iso.setText(bundled.getPath()));
-                }catch(Exception e){tmp.delete();a.runOnUiThread(()->Toast.makeText(a,"Guest setup: "+e.getMessage()+". Import ISO to continue.",1).show());}
+                    a.runOnUiThread(()->{iso.setText(bundled.getPath());mediaStatus.setText("Original OS and Qwen model installed • checksum verified");});
+                }catch(Exception e){tmp.delete();a.runOnUiThread(()->{mediaStatus.setText("Bundled setup failed; import a verified ISO");Toast.makeText(a,"Guest setup: "+e.getMessage()+". Import ISO to continue.",1).show();});}
                 finally { preparing.set(false); }
             }).start();
         }
@@ -78,7 +80,7 @@ final class LlmDashboard {
                         File dest = new File(a.getFilesDir(),"guest.iso");
                         java.nio.file.Files.move(tmp.toPath(),dest.toPath(),java.nio.file.StandardCopyOption.REPLACE_EXISTING);
                         prefs.edit().putString("iso",dest.getPath()).apply();
-                        a.runOnUiThread(() -> iso.setText(dest.getPath()));
+                        a.runOnUiThread(() -> {iso.setText(dest.getPath());mediaStatus.setText("Imported boot media ready • checksum verified");});
                     } catch(Exception e) { tmp.delete(); a.runOnUiThread(() -> Toast.makeText(a,e.toString(),1).show()); }
                     finally { a.runOnUiThread(() -> { imp.setEnabled(true); imp.setText("Import ISO from device"); }); }
                 }).start();
@@ -120,7 +122,7 @@ final class LlmDashboard {
                     }catch(Exception|LinkageError e){errors.setText(e.toString());}
                 };
                 ((ActivityManager)a.getSystemService(Context.ACTIVITY_SERVICE)).getMemoryInfo(info);
-                if(mb*1048576L>info.availMem*0.7)new AlertDialog.Builder(a).setMessage("This allocation may exhaust Android memory and terminate the VM.").setPositiveButton("Boot",(d,w)->launch.run()).setNegativeButton("Cancel",null).show();else launch.run();
+                if(mb>4096 || mb*1048576L>info.availMem*0.7)new AlertDialog.Builder(a).setMessage(mb>4096?"The original llm.asm guest maps only the first 4 GiB and may fail with this allocation. Use a compatible custom ISO or choose 2–4 GiB.":"This allocation may exhaust Android memory and terminate the VM.").setPositiveButton("Boot",(d,w)->launch.run()).setNegativeButton("Cancel",null).show();else launch.run();
             }catch(Exception e){errors.setText(e.toString());}
         });
         Button logs=new Button(a);logs.setText("Guest serial log / Copy");panel.addView(logs);
