@@ -41,5 +41,8 @@ PY
   adb logcat -d > smoke/guest-logcat.txt
   adb shell pidof com.qubevm.main
   if grep -E 'FATAL EXCEPTION|UnsatisfiedLinkError|dlopen failed|Fatal signal' smoke/guest-logcat.txt; then exit 1; fi
+  adb exec-out run-as com.qubevm.main cat files/guest-serial.log > smoke/guest-serial.log
+  grep -q 'asm-llm OS' smoke/guest-serial.log
+  grep -q 'Model.*Qwen3' smoke/guest-serial.log
   printf 'Boot button exercised. Inspect guest-screen.png and logs for actual guest state.\n'
 fi

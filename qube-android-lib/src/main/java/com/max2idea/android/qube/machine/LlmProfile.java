@@ -15,7 +15,7 @@ public final class LlmProfile {
         m.setTcgBuffer(performance ? 512 : 256);
         m.setRenderer(0); m.setVga("std"); m.setMachineType("pc");
         m.setEnableCDROM(true); m.setCdImagePath(iso); m.setBootDevice("CDROM");
-        m.setNetwork(null); m.setSoundCard(null); m.setExtraParams(extra);
+        m.setNetwork(null); m.setSoundCard(null); m.setExtraParams("-serial file:" + com.max2idea.android.qube.main.QubeApplication.getInstance().getFilesDir() + "/guest-serial.log " + extra);
     }
     private LlmProfile() {}
 }

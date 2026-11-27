@@ -123,6 +123,20 @@ final class LlmDashboard {
                 if(mb*1048576L>info.availMem*0.7)new AlertDialog.Builder(a).setMessage("This allocation may exhaust Android memory and terminate the VM.").setPositiveButton("Boot",(d,w)->launch.run()).setNegativeButton("Cancel",null).show();else launch.run();
             }catch(Exception e){errors.setText(e.toString());}
         });
+        Button logs=new Button(a);logs.setText("Guest serial log / Copy");panel.addView(logs);
+        logs.setOnClickListener(v->{
+            try {
+                File f=new File(a.getFilesDir(),"guest-serial.log");
+                String text;
+                try(java.io.RandomAccessFile in=new java.io.RandomAccessFile(f,"r")){
+                    int n=(int)Math.min(in.length(),1048576);byte[] b=new byte[n];in.seek(in.length()-n);in.readFully(b);text=new String(b,java.nio.charset.StandardCharsets.UTF_8);
+                }
+                TextView view=new TextView(a);view.setText(text);view.setTypeface(android.graphics.Typeface.MONOSPACE);view.setTextIsSelectable(true);view.setPadding(20,20,20,20);
+                ScrollView sc=new ScrollView(a);sc.addView(view);
+                final String content=text;
+                new AlertDialog.Builder(a).setTitle("Actual COM1 output").setView(sc).setPositiveButton("Close",null).setNeutralButton("Copy",(d,w)->((android.content.ClipboardManager)a.getSystemService(Context.CLIPBOARD_SERVICE)).setPrimaryClip(ClipData.newPlainText("Guest serial log",content))).show();
+            } catch(Exception e){errors.setText("No guest serial output yet: "+e.getMessage());}
+        });
         for(MachineAction action:new MachineAction[]{MachineAction.STOP_VM,MachineAction.RESET_VM}){
             Button b=new Button(a);b.setText(action==MachineAction.STOP_VM?"Stop System":"Restart System");panel.addView(b);
             b.setOnClickListener(v->{if(MachineController.getInstance().isRunning())Dispatcher.getInstance().onAction(action,null);});
