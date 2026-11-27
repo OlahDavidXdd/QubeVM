@@ -53,11 +53,24 @@ jobs:
           USE_QEMU_VERSION: 11.1.3
           USE_KVM: 'false'
       - uses: actions/download-artifact@v4
+        id: guest_archive
+        continue-on-error: true
         with:
           name: llm-asm-original-ISO
           run-id: '46035265522'
           github-token: ${{ github.token }}
           path: guest-media
+      - name: Rebuild original media if retained artifact is unavailable
+        if: steps.guest_archive.outcome == 'failure'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y nasm binutils grub-pc-bin grub-efi-amd64-bin mtools xorriso
+          pip install --break-system-packages numpy huggingface_hub
+          git clone https://github.com/alesha-pro/llm.asm.git guest
+          git -C guest checkout 48feccbfd57cb669440f31ff64958d95bb8b848e
+          python3 ci/build-guest.py
+          mkdir -p guest-media
+          cp guest/build/*.iso guest/build/SHA256SUMS guest-media/
       - name: Verify and bundle original guest
         run: |
           cd guest-media
