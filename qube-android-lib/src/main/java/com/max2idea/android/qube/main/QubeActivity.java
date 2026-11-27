@@ -3622,7 +3622,7 @@ public class QubeActivity extends AppCompatActivity
     }
 
     //check permissions before start
-    private void checkStoragePermission() {
+    protected void checkStoragePermission() {
         runOnUiThread(() -> {
             if (!Environment.isExternalStorageManager()) {
                 new MaterialAlertDialogBuilder(this)

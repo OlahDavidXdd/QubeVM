@@ -25,7 +25,7 @@ final class LlmDashboard {
         ((ActivityManager)a.getSystemService(Context.ACTIVITY_SERVICE)).getMemoryInfo(info);
         label.accept("Physical RAM: " + info.totalMem/1048576 + " MB • Available: " + info.availMem/1048576 + " MB");
         label.accept("Original llm.asm • Qwen3-0.6B Q8_0 • Offline after setup");
-        EditText iso = new EditText(a); iso.setText(prefs.getString("iso", "")); iso.setTextColor(-1);
+        EditText iso = new EditText(a); iso.setText(prefs.getString("iso", "")); iso.setTextColor(-1); iso.setHintTextColor(0xff78958b);
         iso.setHint("App-private ISO path"); panel.addView(iso);
         java.util.concurrent.atomic.AtomicBoolean preparing=new java.util.concurrent.atomic.AtomicBoolean(false);
         File bundled = new File(a.getFilesDir(),"guest.iso");
@@ -53,7 +53,7 @@ final class LlmDashboard {
                 finally { preparing.set(false); }
             }).start();
         }
-        EditText hash = new EditText(a); hash.setTextColor(-1); hash.setHint("Expected ISO SHA-256 (required for import)"); panel.addView(hash);
+        EditText hash = new EditText(a); hash.setTextColor(-1);hash.setHintTextColor(0xff78958b); hash.setHint("Expected ISO SHA-256 (required for import)"); panel.addView(hash);
         Button imp = new Button(a); imp.setText("Import ISO from device"); panel.addView(imp);
         imp.setOnClickListener(v -> {
             if (preparing.get()) { Toast.makeText(a,"Wait for bundled media setup to finish",1).show(); return; }
@@ -99,7 +99,7 @@ final class LlmDashboard {
         Spinner cores=new Spinner(a); cores.setAdapter(new ArrayAdapter<String>(a,android.R.layout.simple_spinner_dropdown_item,new String[]{"1","2","3","4","5","6","7","8"})); cores.setSelection(prefs.getInt("cores",1)-1);panel.addView(cores);
         Spinner cpu=new Spinner(a);cpu.setAdapter(new ArrayAdapter<String>(a,android.R.layout.simple_spinner_dropdown_item,new String[]{"max","Haswell","Broadwell"}));cpu.setSelection(prefs.getInt("cpu",0));panel.addView(cpu);
         Switch multi=new Switch(a);multi.setText("Multithreaded TCG");multi.setTextColor(-1);multi.setChecked(prefs.getBoolean("multi",true));panel.addView(multi);
-        EditText extra=new EditText(a);extra.setTextColor(-1);extra.setHint("Advanced QEMU arguments");extra.setText(prefs.getString("extra",""));panel.addView(extra);
+        EditText extra=new EditText(a);extra.setTextColor(-1);extra.setHintTextColor(0xff78958b);extra.setHint("Advanced QEMU arguments");extra.setText(prefs.getString("extra",""));panel.addView(extra);
         Switch performance=new Switch(a);performance.setText("Performance mode (512 MB translation cache)");performance.setTextColor(-1);performance.setChecked(prefs.getBoolean("performance",false));panel.addView(performance);
         TextView errors=new TextView(a);errors.setTextColor(0xffff8888);panel.addView(errors);
         TextView status=new TextView(a);status.setTextColor(0xff34d399);panel.addView(status);

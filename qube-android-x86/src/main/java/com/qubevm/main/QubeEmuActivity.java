@@ -20,6 +20,9 @@ public class QubeEmuActivity extends QubeActivity {
         QubeApplication.arch = Config.Arch.x86_64;
         Config.clientClass = this.getClass();
         Config.enableKVM = false;
+        Config.loadNativeLibsEarly = true;
+        Config.loadNativeLibsMainThread = true;
+        androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES);
         // Enable MTTCG only on 64-bit hosts when it is enabled globally.
         if (QubeApplication.isHost64Bit() && Config.enableMTTCG) {
             Config.enableMTTCG = true;
@@ -29,6 +32,10 @@ public class QubeEmuActivity extends QubeActivity {
         super.onCreate(bundle);
         Logger.setupLogFile("/qube/qube-x86-log.txt");
         LlmDashboard.show(this);
+    }
+
+    @Override protected void checkStoragePermission() {
+        // Private files and ACTION_OPEN_DOCUMENT require no all-files access.
     }
 
     @Override public void onFirstLaunch() {
