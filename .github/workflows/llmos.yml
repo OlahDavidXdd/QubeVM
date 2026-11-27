@@ -1,0 +1,58 @@
+name: LLM.OS APK
+on:
+  workflow_dispatch:
+  push:
+    branches: [llmos]
+permissions:
+  contents: read
+jobs:
+  apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        abi: [arm64-v8a, x86_64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0' 'ndk;30.0.16248370'
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y make autoconf automake libtool-bin flex bison gettext texinfo rsync gtk-doc-tools ninja-build python3-pip
+          pip install --break-system-packages meson mako packaging
+      - uses: gradle/actions/setup-gradle@v4
+      - uses: actions/cache@v4
+        with:
+          path: |
+            qube-android-lib/src/main/jni/qemu
+            qube-android-lib/src/main/jni/glib
+            qube-android-lib/src/main/jni/libffi
+            qube-android-lib/src/main/jni/pixman
+            qube-android-lib/src/main/jni/libepoxy
+            qube-android-lib/src/main/jni/virglrenderer
+            qube-android-lib/src/main/obj
+          key: native-${{ runner.os }}-${{ matrix.abi }}-${{ hashFiles('ci/**', 'qube-android-lib/src/main/jni/**') }}
+      - run: python3 ci/fetch-native.py
+      - name: Compile QEMU and JNI
+        run: make -C qube-android-lib/src/main/jni qube
+        env:
+          NDK_ROOT: ${{ env.ANDROID_HOME }}/ndk/30.0.16248370
+          BUILD_HOST: ${{ matrix.abi }}
+          BUILD_GUEST: x86_64-softmmu
+          USE_QEMU_VERSION: 11.1.3
+          USE_KVM: 'false'
+      - run: ./gradlew :qube-android-x86:assembleDebug -PqemuVersion=11.1.3
+      - name: Verify APK native payload and signature
+        run: |
+          python3 ci/verify-apk.py qube-android-x86/build/outputs/apk/debug/*.apk ${{ matrix.abi }}
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose qube-android-x86/build/outputs/apk/debug/*.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LLMOS-${{ matrix.abi }}-debug
+          path: qube-android-x86/build/outputs/apk/debug/*.apk
+          if-no-files-found: error

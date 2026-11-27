@@ -24,12 +24,12 @@ tasks.named('preBuild') {
 
 android {
     namespace = 'com.qube.emu.lib'
-    compileSdk = 37
+    compileSdk = 36
     ndkVersion = rootProject.ext.ndkVersion
 
     defaultConfig{
         minSdk = 30
-        targetSdk = 37
+        targetSdk = 36
         // Controls whether Venus is enabled into the app (show or hide)
         // fallbacks to false
         buildConfigField "boolean", "USE_VENUS", "${rootProject.findProperty('useVenus') ?: 'false'}"
