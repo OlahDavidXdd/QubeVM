@@ -40,7 +40,7 @@ jobs:
             qube-android-lib/src/main/jni/libepoxy
             qube-android-lib/src/main/jni/virglrenderer
             qube-android-lib/src/main/obj
-          key: native-${{ runner.os }}-${{ matrix.abi }}-${{ hashFiles('ci/**', 'qube-android-lib/src/main/jni/**') }}
+          key: native-${{ runner.os }}-${{ matrix.abi }}-${{ hashFiles('ci/native-sources.json', 'ci/fetch-native.py', 'qube-android-lib/src/main/jni/*.mak', 'qube-android-lib/src/main/jni/Makefile', 'qube-android-lib/src/main/jni/android-config/**', 'qube-android-lib/src/main/jni/patches/**') }}
       - run: python3 ci/fetch-native.py
       - name: Compile QEMU and JNI
         run: make -C qube-android-lib/src/main/jni qube

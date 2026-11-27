@@ -27,8 +27,11 @@ final class LlmDashboard {
         label.accept("Original llm.asm • Qwen3-0.6B Q8_0 • Offline after setup");
         EditText iso = new EditText(a); iso.setText(prefs.getString("iso", "")); iso.setTextColor(-1);
         iso.setHint("App-private ISO path"); panel.addView(iso);
+        java.util.concurrent.atomic.AtomicBoolean preparing=new java.util.concurrent.atomic.AtomicBoolean(false);
         File bundled = new File(a.getFilesDir(),"guest.iso");
+        if (bundled.exists() && iso.getText().length()==0) iso.setText(bundled.getPath());
         if (!bundled.exists() && iso.getText().length()==0) {
+            preparing.set(true);
             label.accept("Preparing bundled original OS and Qwen model…");
             new Thread(() -> {
                 File tmp = new File(a.getFilesDir(),"bundled.partial");
@@ -47,11 +50,13 @@ final class LlmDashboard {
                     prefs.edit().putString("iso",bundled.getPath()).apply();
                     a.runOnUiThread(()->iso.setText(bundled.getPath()));
                 }catch(Exception e){tmp.delete();a.runOnUiThread(()->Toast.makeText(a,"Guest setup: "+e.getMessage()+". Import ISO to continue.",1).show());}
+                finally { preparing.set(false); }
             }).start();
         }
         EditText hash = new EditText(a); hash.setTextColor(-1); hash.setHint("Expected ISO SHA-256 (required for import)"); panel.addView(hash);
         Button imp = new Button(a); imp.setText("Import ISO from device"); panel.addView(imp);
         imp.setOnClickListener(v -> {
+            if (preparing.get()) { Toast.makeText(a,"Wait for bundled media setup to finish",1).show(); return; }
             if (MachineController.getInstance().isRunning()) { Toast.makeText(a,"Stop the system before importing media",1).show(); return; }
             Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("*/*").addCategory(Intent.CATEGORY_OPENABLE);
             a.isoImported = uri -> {
@@ -120,7 +125,7 @@ final class LlmDashboard {
         });
         for(MachineAction action:new MachineAction[]{MachineAction.STOP_VM,MachineAction.RESET_VM}){
             Button b=new Button(a);b.setText(action==MachineAction.STOP_VM?"Stop System":"Restart System");panel.addView(b);
-            b.setOnClickListener(v->Dispatcher.getInstance().onAction(action,null));
+            b.setOnClickListener(v->{if(MachineController.getInstance().isRunning())Dispatcher.getInstance().onAction(action,null);});
         }
         new Handler(Looper.getMainLooper()).post(new Runnable(){public void run(){if(a.isDestroyed())return;status.setText("Emulator: "+MachineController.getInstance().getCurrStatus()+" • Guest progress appears in console");status.postDelayed(this,1500);}});
         a.setContentView(scroll);
