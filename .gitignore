@@ -1,0 +1,14 @@
+.gradle/
+**/build/
+**/obj/
+**/jniLibs/
+local.properties
+ci/download-*
+qube-android-lib/src/main/jni/qemu/
+qube-android-lib/src/main/jni/glib/
+qube-android-lib/src/main/jni/libffi/
+qube-android-lib/src/main/jni/pixman/
+qube-android-lib/src/main/jni/libepoxy/
+qube-android-lib/src/main/jni/virglrenderer/
+qube-android-lib/src/main/res/raw/
+qube-android-x86/src/main/assets/llmos/
