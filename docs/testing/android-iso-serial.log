@@ -1,0 +1,19 @@
+[H[J[1;1H
+==============================================================================
+  asm-llm OS v2.0 | Bare-Metal Qwen3-0.6B in 100% Pure x86-64 Assembly
+==============================================================================
+  CPU   : QEMU TCG CPU version 2.5+ (AVX2+FMA, 2711 MHz)
+  SMP   : 1/1 x86-64 cores online (APIC INIT-SIPI-SIPI, lock-free)
+  RAM   : 2047 MiB | Arena: 449 MiB | Boot: 857.26 ms
+  Model : Qwen3-0.6B Q8_0 (614 MiB @ 0x00322000, 28L, ctx=2048)
+==============================================================================
+Interactive Bare-Metal Chat (/clear, /think, /nothink, /bench, /halt, /help)
+
+asm-llm> /think
+[mode] think=1 (Qwen3 reasoning enabled)
+
+asm-llm> /nothink
+[mode] think=0 (direct answer mode)
+
+asm-llm> Hi
+Hello
