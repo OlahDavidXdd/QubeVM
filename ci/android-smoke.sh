@@ -24,7 +24,7 @@ if adb shell run-as com.qubevm.main test -f files/guest.iso; then
     coordinates=$(python3 - <<'PY'
 import xml.etree.ElementTree as E,re
 for e in E.parse('smoke/boot-window.xml').iter('node'):
-    if e.get('text','').startswith('Boot System'):
+    if e.get('text','').casefold().startswith('boot system'):
         x1,y1,x2,y2=map(int,re.findall(r'\d+',e.get('bounds')))
         print((x1+x2)//2,(y1+y2)//2)
         break
@@ -43,7 +43,7 @@ PY
   confirm=$(python3 - <<'PYCONFIRM'
 import xml.etree.ElementTree as E,re
 for e in E.parse('smoke/confirm-window.xml').iter('node'):
-    if e.get('text')=='Boot':
+    if e.get('text','').casefold()=='boot':
         x1,y1,x2,y2=map(int,re.findall(r'\d+',e.get('bounds')))
         print((x1+x2)//2,(y1+y2)//2)
         break
