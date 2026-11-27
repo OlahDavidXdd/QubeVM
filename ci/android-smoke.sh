@@ -11,7 +11,7 @@ adb logcat -d > smoke/logcat.txt
 adb shell uiautomator dump /sdcard/window.xml
 adb pull /sdcard/window.xml smoke/window.xml
 adb exec-out screencap -p > smoke/screen.png
-if rg 'FATAL EXCEPTION|UnsatisfiedLinkError|dlopen failed|Fatal signal' smoke/logcat.txt; then
+if grep -E 'FATAL EXCEPTION|UnsatisfiedLinkError|dlopen failed|Fatal signal' smoke/logcat.txt; then
   exit 1
 fi
 printf 'APK installed and process survived startup; guest boot is not asserted.\n'
@@ -40,6 +40,6 @@ PY
   adb exec-out screencap -p > smoke/guest-screen.png
   adb logcat -d > smoke/guest-logcat.txt
   adb shell pidof com.qubevm.main
-  if rg 'FATAL EXCEPTION|UnsatisfiedLinkError|dlopen failed|Fatal signal' smoke/guest-logcat.txt; then exit 1; fi
+  if grep -E 'FATAL EXCEPTION|UnsatisfiedLinkError|dlopen failed|Fatal signal' smoke/guest-logcat.txt; then exit 1; fi
   printf 'Boot button exercised. Inspect guest-screen.png and logs for actual guest state.\n'
 fi
