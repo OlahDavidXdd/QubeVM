@@ -4,7 +4,7 @@ on:
     inputs:
       run_id:
         description: APK build run ID
-        default: '46035857746'
+        default: '46037337771'
         required: true
   push:
     branches: [llmos]
@@ -21,7 +21,7 @@ jobs:
       - name: Download latest successful x86-64 APK
         env:
           GH_TOKEN: ${{ github.token }}
-          APK_RUN: ${{ inputs.run_id || '46035857746' }}
+          APK_RUN: ${{ inputs.run_id || '46037337771' }}
         run: |
           gh run download "$APK_RUN" --name LLMOS-x86_64-debug --dir apk
       - name: Enable KVM for Android test emulator
